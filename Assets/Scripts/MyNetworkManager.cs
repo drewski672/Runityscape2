@@ -46,11 +46,6 @@ public class MyNetworkManager : NetworkManager
         OnClientDisconnectCallback += OnClientDisconnected;
     }
 
-    private void Update()
-    {
-        PrintDebugInfo();
-    }
-
     // Method to print debug information
     private void PrintDebugInfo()
     {
@@ -84,7 +79,7 @@ public class MyNetworkManager : NetworkManager
 
     public void OnClientConnected(ulong clientId)
     {
-        PlayerData playerData = new PlayerData();
+        PlayerData playerData = DBManager.Instance.CurrentPlayerData;
         PlayerDataDictionary[clientId] = playerData;
         // Get player's database ID directly, not dependent on clientId anymore
         int playerDatabaseId = GetPlayerDatabaseIDFromLogin(clientId);

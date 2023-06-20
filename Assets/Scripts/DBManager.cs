@@ -67,15 +67,6 @@ public class DBManager
 
 public class PlayerData
 {
-    public float PositionX { get; set; }
-    public float PositionY { get; set; }
-    public float PositionZ { get; set; }
-
-    public int Id { get; set; }
-    public string Username { get; set; }
-
-    public bool LoggedIn { get; set; }
-
     public enum Skill
     {
         Attack, Strength, Defense, Hits, Magic, Ranged, Prayer, Cooking,
@@ -83,33 +74,90 @@ public class PlayerData
         Mining, Herblore, Agility, Thieving, Slayer, Farming, Runecrafting
     }
 
+    public enum IronmanStatus
+    {
+        None, Ironman, UltimateIronman, HardcoreIronman
+    }
+
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; } // added
+    public string Email { get; set; } // added
+    public float PositionX { get; set; }
+    public float PositionY { get; set; }
+    public float PositionZ { get; set; }
+    public IronmanStatus PlayerIronmanStatus { get; set; }
+    public int QuestPoints { get; set; } // added
+    public int CombatLevel { get; set; } // added
+    public int TotalLevel { get; set; } // added
+    public long TotalExperience { get; set; }
+    public bool MembershipStatus { get; set; } // added
+    public bool BanStatus { get; set; } // added
+    public bool MuteStatus { get; set; } // added
+    public DateTime RegistrationDate { get; set; } // added
+    public DateTime LastLogin { get; set; } // added
+    public bool LoggedIn { get; set; }
+
     private Dictionary<Skill, int> _levels;
     public Dictionary<Skill, int> Levels { get { return _levels; } }
 
     private Dictionary<Skill, int> _experience;
     public Dictionary<Skill, int> Experience { get { return _experience; } }
 
-    private long _totalExperience;
-    public long TotalExperience
-    {
-        get { return _totalExperience; }
-        set
-        {
-            if (_totalExperience != value)
-            {
-                _totalExperience = value;
-                OnTotalExperienceChanged.Invoke(value);
-            }
-        }
-    }
-
     public event Action<long> OnTotalExperienceChanged = delegate { };
     private event Action<Skill, int> OnSkillLevelChanged = delegate { };
     private event Action<Skill, int> OnSkillExperienceChanged = delegate { };
 
+    public PlayerData()
+    {
+        _levels = new Dictionary<Skill, int>();
+        _experience = new Dictionary<Skill, int>();
+
+        foreach (Skill skill in Enum.GetValues(typeof(Skill)))
+        {
+            _levels[skill] = 0;
+            _experience[skill] = 0;
+        }
+
+        Id = -1;
+        Username = null;
+        Password = null;
+        Email = null;
+        PositionX = 0;
+        PositionY = 0;
+        PositionZ = 0;
+        PlayerIronmanStatus = IronmanStatus.None;
+        QuestPoints = 0;
+        CombatLevel = 3;
+        TotalLevel = 32;
+        TotalExperience = 1154;
+        MembershipStatus = false;
+        BanStatus = false;
+        MuteStatus = false;
+        RegistrationDate = DateTime.Now;
+        LastLogin = DateTime.Now;
+        LoggedIn = false;
+    }
+
     public void LogOut(ulong clientId)
     {
+        Id = -1;
         Username = null;
+        Password = null;
+        Email = null;
+        PositionX = 0;
+        PositionY = 0;
+        PositionZ = 0;
+        PlayerIronmanStatus = IronmanStatus.None;
+        QuestPoints = 0;
+        CombatLevel = 3;
+        TotalLevel = 32;
+        TotalExperience = 1154;
+        MembershipStatus = false;
+        BanStatus = false;
+        MuteStatus = false;
+        RegistrationDate = DateTime.Now;
+        LastLogin = DateTime.Now;
         LoggedIn = false;
         _levels.Clear();
         _experience.Clear();
@@ -133,26 +181,8 @@ public class PlayerData
             OnSkillExperienceChanged.Invoke(skill, experience);
         }
     }
-
-    public PlayerData()
-    {
-        _levels = new Dictionary<Skill, int>();
-        _experience = new Dictionary<Skill, int>();
-
-        foreach (Skill skill in Enum.GetValues(typeof(Skill)))
-        {
-            _levels[skill] = 0;
-            _experience[skill] = 0;
-        }
-
-        PositionX = 0;
-        PositionY = 0;
-        PositionZ = 0;
-        Id = -1;
-        Username = null;
-        LoggedIn = false;
-    }
 }
+
 
 [System.Serializable]
 public class ResponseData
@@ -167,9 +197,15 @@ public class PlayerDataRaw
 {
     public string id;
     public string username;
+    public string password; // added
+    public string email; // added
     public string positionX;
     public string positionY;
     public string positionZ;
+    public string ironmanStatus; // added
+    public string questPoints; // added
+    public string combatLevel; // added
+    public string totalLevel; // added
     public string totalExperience;
     public string skillAttack;
     public string experienceAttack;
@@ -213,16 +249,31 @@ public class PlayerDataRaw
     public string experienceFarming;
     public string skillRunecrafting;
     public string experienceRunecrafting;
+    public string membershipStatus; // added
+    public string banStatus; // added
+    public string muteStatus; // added
+    public string registrationDate; // added
+    public string lastLogin; // added
 
+    
     public PlayerData ToPlayerData()
     {
         PlayerData playerData = new PlayerData();
+        Debug.Log("Raw ID: " + id);
+        Debug.Log("ID before parsing: " + playerData.Id);
 
         playerData.Id = int.Parse(id);
+        Debug.Log("ID after parsing: " + playerData.Id);
         playerData.Username = username;
+        playerData.Password = password; // added
+        playerData.Email = email; // added
         playerData.PositionX = float.Parse(positionX);
         playerData.PositionY = float.Parse(positionY);
         playerData.PositionZ = float.Parse(positionZ);
+        playerData.PlayerIronmanStatus = (PlayerData.IronmanStatus)Enum.Parse(typeof(PlayerData.IronmanStatus), ironmanStatus); // added
+        playerData.QuestPoints = int.Parse(questPoints); // added
+        playerData.CombatLevel = int.Parse(combatLevel); // added
+        playerData.TotalLevel = int.Parse(totalLevel); // added
         playerData.TotalExperience = long.Parse(totalExperience);
 
         playerData.SetLevel(PlayerData.Skill.Attack, int.Parse(skillAttack));

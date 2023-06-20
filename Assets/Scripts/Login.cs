@@ -10,10 +10,15 @@ public class Login : NetworkBehaviour
 {
     public TMP_InputField nameField;
     public TMP_InputField passwordField;
+    public string username;
+    public string password;
     public Button submitButton;
 
     public void CallLogin()
     {
+        username = nameField.text;
+        password = passwordField.text;
+        Debug.Log($"OnLoginButton - Username: {username}, Password: {password}");
         StartCoroutine(LoginPlayer());
     }
 
@@ -22,6 +27,7 @@ public class Login : NetworkBehaviour
         WWWForm form = new WWWForm();
         form.AddField("name", nameField.text);
         form.AddField("password", passwordField.text);
+        Debug.Log($"Login - Username: {username}, Password: {password}");
         using (UnityWebRequest www = UnityWebRequest.Post("http://localhost/sqlconnect/login.php", form))
         {
             yield return www.SendWebRequest();
@@ -38,13 +44,11 @@ public class Login : NetworkBehaviour
                     // Access the DBManager singleton instance
                     DBManager dbManager = DBManager.Instance;
                     Debug.Log("Data received from database:");
-                    Debug.Log(responseData.playerData);
+                    
 
                     // Convert PlayerDataRaw to PlayerData before assigning it
                     dbManager.CurrentPlayerData = responseData.playerData.ToPlayerData();
 
-                    Debug.Log("Should be setting CurrentPlayerData to the data from database:");
-                    Debug.Log(dbManager.CurrentPlayerData);
                     Debug.Log("Login successful.");
                     UnityEngine.SceneManagement.SceneManager.LoadScene(0);
                 }
