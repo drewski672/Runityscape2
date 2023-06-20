@@ -19,8 +19,6 @@ public class MyNetworkManager : NetworkManager
     // Dictionary to store player GameObjects
     private Dictionary<ulong, GameObject> _clientToPlayerObject = new Dictionary<ulong, GameObject>();
 
-    // Database url
-    private string _databaseUrl = "http://localhost/sqlconnect/updatefield.php";
 
     private void Awake()
     {
@@ -71,6 +69,13 @@ public class MyNetworkManager : NetworkManager
         StartServer();
     }
 
+    public void LogOutButton()
+    {
+        ulong clientId = LocalClientId;
+        Debug.Log("Logging Out Client: " + clientId);
+        LogOut(clientId);
+    }
+
     public void LogOut(ulong clientId)
     {
         OnClientDisconnected(clientId);
@@ -79,17 +84,32 @@ public class MyNetworkManager : NetworkManager
 
     public void OnClientConnected(ulong clientId)
     {
+        Debug.Log("Client connected. Processing...");
+
         PlayerData playerData = DBManager.Instance.CurrentPlayerData;
+        if (playerData == null)
+        {
+            Debug.LogError("Failed to fetch PlayerData from DBManager. Aborting client connection.");
+            return;
+        }
+
         PlayerDataDictionary[clientId] = playerData;
-        // Get player's database ID directly, not dependent on clientId anymore
+        Debug.Log("PlayerData stored for clientId " + clientId);
+
         int playerDatabaseId = GetPlayerDatabaseIDFromLogin(clientId);
+
+        if (playerDatabaseId == 0)
+        {
+            Debug.LogError("Failed to fetch playerDatabaseId for clientId " + clientId);
+            return;
+        }
 
         Debug.Log("OnClientConnected: clientId = " + clientId + ", playerDatabaseId = " + playerDatabaseId);
 
-        // Add the mapping to our dictionary
         _clientToDatabaseID[clientId] = playerDatabaseId;
+        Debug.Log("Client to Database Id mapped for clientId " + clientId);
 
-        PrintDebugInfo(); // Print debug info
+        PrintDebugInfo();
 
         _spawner.SpawnPlayer(clientId);
     }
@@ -118,6 +138,7 @@ public class MyNetworkManager : NetworkManager
     {
         WWWForm form = new WWWForm();
         form.AddField("id", playerDatabaseId.ToString()); // Change this to fetch the actual username if necessary
+        Debug.Log("Trying to access ID: " + playerDatabaseId.ToString() + " in UpdatePlayerField");
         form.AddField("fieldName", fieldName);
         form.AddField("newValue", newValue);
 
@@ -137,29 +158,37 @@ public class MyNetworkManager : NetworkManager
 
     private void OnClientDisconnected(ulong clientId)
     {
-        // Here you can look up the database ID based on the clientId
+        Debug.Log("Client disconnected. Processing...");
+
         if (_clientToDatabaseID.TryGetValue(clientId, out int playerDatabaseId))
         {
-            // Assuming you have a reference to the player object, you can fetch its position.
             Vector3 playerPosition = GetPlayerPosition(clientId);
-            Debug.Log(GetPlayerPosition(clientId));
-            foreach (var entry in _clientToDatabaseID)
+            if (playerPosition == Vector3.zero)
             {
-                Debug.Log("Client ID: " + entry.Key + ", Database ID: " + entry.Value);
+                Debug.LogError("Failed to fetch player position for clientId " + clientId);
+                return;
             }
+
+            Debug.Log("Player position for clientId " + clientId + ": " + playerPosition);
+
             Debug.Log("Attempting to save player location for player id: " + playerDatabaseId);
-            // Save player data to database.
+
             StartCoroutine(UpdatePlayerField(playerDatabaseId, "positionX", playerPosition.x.ToString()));
             StartCoroutine(UpdatePlayerField(playerDatabaseId, "positionY", playerPosition.y.ToString()));
             StartCoroutine(UpdatePlayerField(playerDatabaseId, "positionZ", playerPosition.z.ToString()));
 
-            // Remove the player's GameObject reference from the dictionary
             _clientToPlayerObject.Remove(clientId);
+            Debug.Log("Removed PlayerObject for clientId " + clientId);
 
             PlayerDataDictionary.Remove(clientId);
+            Debug.Log("Removed PlayerData for clientId " + clientId);
 
-            // Optionally, you can now remove this clientId from the mapping if it's no longer needed
             _clientToDatabaseID.Remove(clientId);
+            Debug.Log("Removed Client to Database Id mapping for clientId " + clientId);
+        }
+        else
+        {
+            Debug.LogError("Failed to fetch playerDatabaseId for clientId " + clientId);
         }
     }
 
