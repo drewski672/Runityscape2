@@ -160,7 +160,8 @@ public class MyNetworkManager : NetworkManager
     {
         Debug.Log("Client disconnected. Processing...");
 
-        if (_clientToDatabaseID.TryGetValue(clientId, out int playerDatabaseId))
+        //if (_clientToDatabaseID.TryGetValue(clientId, out int playerDatabaseId))
+        if (TryGetPlayerDatabaseId(clientId, out int playerDatabaseId))
         {
             Vector3 playerPosition = GetPlayerPosition(clientId);
             if (playerPosition == Vector3.zero)

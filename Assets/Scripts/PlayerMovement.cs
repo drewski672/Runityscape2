@@ -84,20 +84,6 @@ public class PlayerMovement : NetworkBehaviour
         Move(point);
     }
 
-    // The client calls this function to request a move to a specific destination
-    //[ServerRpc]
-    //public void RequestMoveToServerRpc(Vector3 destination)
-    //{
-    //    MoveToClientRpc(destination);
-    //}
-
-    // Only the server can actually move the player to a specific destination
-    //[ClientRpc]
-    //public void MoveToClientRpc(Vector3 destination)
-    //{
-    //    MoveTo(destination);
-    //}
-
     private void Move(Vector3 point)
     {
         NavMeshHit hit;
@@ -106,11 +92,6 @@ public class PlayerMovement : NetworkBehaviour
             _navMeshAgent.SetDestination(RoundToNearestCellCenter(hit.position));
         }
     }
-
-    //private void MoveTo(Vector3 destination)
-    //{
-    //    _navMeshAgent.SetDestination(destination);
-    //}
 
     private Vector3 RoundToNearestCellCenter(Vector3 rawWorldPos)
     {
